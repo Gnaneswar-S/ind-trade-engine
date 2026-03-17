@@ -16,7 +16,7 @@ Dataset files in data/ folder (JSON, loaded once at startup):
 import os
 import json
 from pathlib import Path
-from gemini_service import _call_llama
+from nvidia_service import _call_llama
 
 DATA_DIR = Path(os.getenv("DATA_DIR", "data"))
 
@@ -123,21 +123,33 @@ def calculate_shipment_cost(
     direction: str = "Export",
 ) -> dict:
     """Estimate full shipment cost breakdown including all duties and charges."""
-    prompt = f"""Calculate complete shipment cost for this Indian trade transaction.
-
-Product: {product}
-HS Code: {hs_code}
-Direction: {direction}
-Origin Port: {origin_port}
-Destination Port: {destination_port}
-Weight: {weight_kg} kg
-Volume: {volume_cbm} CBM
-Cargo Value: USD {shipment_value_usd}
-
-Provide realistic 2024 freight estimates. Include all Indian port charges.
-
-Return ONLY JSON:
-{{"product":"{product}","direction":"{direction}","origin":"{origin_port}","destination":"{destination_port}","cargo_value_usd":{shipment_value_usd},"freight_charges":{{"sea_freight_usd":0,"airfreight_usd":0,"recommended_mode":"Sea","mode_reason":"reason"}},"origin_charges":{{"inland_transport_inr":0,"port_handling_inr":0,"customs_examination_inr":0,"seal_charges_inr":0,"total_origin_inr":0}},"destination_charges":{{"port_handling_usd":0,"customs_duty_usd":0,"local_delivery_usd":0,"total_destination_usd":0}},"insurance":{{"recommended_value_usd":0,"premium_usd":0,"note":"0.15-0.25% of CIF value"}},"indian_port_charges":{{"thc_inr":0,"documentation_inr":0,"ams_inr":0,"customs_agent_inr":0}},"total_cost_summary":{{"export_cost_inr_approx":0,"import_landed_cost_usd":0,"cost_as_pct_cargo_value":"X%"}},"transit_time_days":{"sea":21,"air":5},"recommended_freight_forwarders":["Agility India","DB Schenker India","Maersk India"],"notes":"specific cost-saving tips"}}"""
+    prompt = (
+        "Calculate complete shipment cost for this Indian trade transaction.\n\n"
+        "Product: " + product + "\n"
+        "HS Code: " + hs_code + "\n"
+        "Direction: " + direction + "\n"
+        "Origin Port: " + origin_port + "\n"
+        "Destination Port: " + destination_port + "\n"
+        "Weight: " + str(weight_kg) + " kg\n"
+        "Volume: " + str(volume_cbm) + " CBM\n"
+        "Cargo Value: USD " + str(shipment_value_usd) + "\n\n"
+        "Provide realistic 2024 freight estimates. Include all Indian port charges.\n\n"
+        "Return ONLY JSON:\n"
+        '{"product":"' + product + '",'
+        '"direction":"' + direction + '",'
+        '"origin":"' + origin_port + '",'
+        '"destination":"' + destination_port + '",'
+        '"cargo_value_usd":' + str(shipment_value_usd) + ','
+        '"freight_charges":{"sea_freight_usd":0,"airfreight_usd":0,"recommended_mode":"Sea","mode_reason":"reason"},'
+        '"origin_charges":{"inland_transport_inr":0,"port_handling_inr":0,"customs_examination_inr":0,"seal_charges_inr":0,"total_origin_inr":0},'
+        '"destination_charges":{"port_handling_usd":0,"customs_duty_usd":0,"local_delivery_usd":0,"total_destination_usd":0},'
+        '"insurance":{"recommended_value_usd":0,"premium_usd":0,"note":"0.15-0.25% of CIF value"},'
+        '"indian_port_charges":{"thc_inr":0,"documentation_inr":0,"ams_inr":0,"customs_agent_inr":0},'
+        '"total_cost_summary":{"export_cost_inr_approx":0,"import_landed_cost_usd":0,"cost_as_pct_cargo_value":"X%"},'
+        '"transit_time_days":{"sea":21,"air":5},'
+        '"recommended_freight_forwarders":["Agility India","DB Schenker India","Maersk India"],'
+        '"notes":"specific cost-saving tips"}'
+    )
     return _call_llama(prompt)
 
 

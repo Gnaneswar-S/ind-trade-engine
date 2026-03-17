@@ -12,6 +12,7 @@ import os
 import json
 from html.parser import HTMLParser
 from datetime import datetime
+from supabase_service import supabase as _supabase_client
 
 
 # ─────────────────────────────────────────
@@ -402,11 +403,10 @@ def get_market_recs_from_supabase(supabase_client, limit: int = 5) -> list[dict]
     except Exception:
         return []
 
-
-def log_market_lookup(supabase_client, user_id: str, email: str, country: str):
-    """Log a country lookup event."""
+def log_market_lookup(supabase_client, user_id, email, country):
+    client = supabase_client or _supabase_client
     try:
-        supabase_client.table("trade_usage_logs").insert({
+        client.table("trade_usage_logs").insert({
             "user_id":   user_id,
             "email":     email,
             "mode":      "CountryLookup",

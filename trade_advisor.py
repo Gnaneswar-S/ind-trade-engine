@@ -3,7 +3,7 @@ trade_advisor.py
 🇮🇳 Advanced Trade Intelligence Modules — TradeGPT + 8 AI engines
 """
 import json
-from gemini_service import _call_llama
+from nvidia_service import _call_llama
 
 
 # ─────────────────────────────────────────────────────────────
@@ -39,19 +39,47 @@ Return ONLY JSON:
 # ─────────────────────────────────────────────────────────────
 # 2. TRADE RISK ANALYZER
 # ─────────────────────────────────────────────────────────────
-def analyze_trade_risk(product, target_country, direction="Export", shipment_value_usd="50,000"):
-    prompt = f"""Analyze trade risk for Indian {direction.lower()} of: {product}
-Target Country: {target_country}, Value: USD {shipment_value_usd}
-
-Score each dimension 1-10 (10=highest risk). Return ONLY JSON:
-{{"product":"{product}","country":"{target_country}","direction":"{direction}","overall_risk_score":4,"overall_risk_label":"Medium","risk_color":"orange","risk_dimensions":{{"political_risk":{{"score":3,"label":"Low","reason":"stable bilateral relations"}},"currency_risk":{{"score":5,"label":"Medium","reason":"moderate INR volatility"}},"tariff_risk":{{"score":2,"label":"Low","reason":"low duties"}},"logistics_risk":{{"score":4,"label":"Medium","reason":"15-20 day transit"}},"compliance_risk":{{"score":3,"label":"Low","reason":"standard certs needed"}},"payment_risk":{{"score":4,"label":"Medium","reason":"use LC first time"}}}},"key_risks":["risk 1","risk 2","risk 3"],"risk_mitigation":["Use LC at sight for first shipment","Take ECGC cover 90%","Specific action 3"],"recommended_incoterm":"CIF","payment_recommendation":"LC at sight, then DP after 3 shipments","insurance_needed":true,"ecgc_cover_available":true,"trade_finance_note":"SBI / EXIM Bank options available","sanctions_status":"No sanctions applicable","fta_applicable":false,"fta_detail":"MFN rates apply"}}"""
-
-    result = _call_llama(prompt)
-    if "error" not in result:
-        s = int(result.get("overall_risk_score", 5))
-        result["overall_risk_label"] = "Low" if s<=3 else ("High" if s>6 else "Medium")
-        result["risk_color"] = "green" if s<=3 else ("red" if s>6 else "orange")
-    return result
+def analyze_trade_risk(
+    product,
+    origin_country="India",
+    supplying_country="India",
+    buyer_countries="",
+    direction="Export",
+    value_usd="50,000",
+):
+    prompt = (
+        "You are a senior Indian trade risk analyst. "
+        "Assess ALL risks for this trade deal using current 2024-2025 geopolitical knowledge.\n\n"
+        f"Product: {product}\n"
+        f"Origin Country (production): {origin_country}\n"
+        f"Supplying Country (exporter): {supplying_country}\n"
+        f"Buyer / Destination Countries: {buyer_countries}\n"
+        f"Trade Direction (India perspective): {direction}\n"
+        f"Deal Value: USD {value_usd}\n\n"
+        "Consider: current sanctions, geopolitical tensions (Russia-Ukraine, Red Sea, India-Pakistan), "
+        "India FTA status, currency volatility, port disruptions, origin mismatch risk, payment default risk.\n\n"
+        "Return ONLY this JSON (no markdown, no preamble):\n"
+        "{\n"
+        '  "overall_risk_score": 65,\n'
+        '  "risk_level": "Medium",\n'
+        '  "executive_summary": "3 sentence summary",\n'
+        '  "geopolitical_alert": "specific concern or null",\n'
+        '  "origin_supplying_mismatch_risk": "risk description or null",\n'
+        '  "risk_categories": [\n'
+        '    {"category":"Regulatory & Sanctions","score":70,"level":"High","details":"explanation","mitigation":"steps"},\n'
+        '    {"category":"Geopolitical Risk","score":65,"level":"Medium","details":"current events","mitigation":"steps"},\n'
+        '    {"category":"Currency & Payment","score":45,"level":"Medium","details":"forex risk","mitigation":"LC/hedging"},\n'
+        '    {"category":"Logistics & Routing","score":55,"level":"Medium","details":"port/route risk","mitigation":"alternate routes"},\n'
+        '    {"category":"Market & Demand","score":40,"level":"Low","details":"demand risk","mitigation":"strategy"},\n'
+        '    {"category":"Compliance & Documentation","score":60,"level":"Medium","details":"cert/labelling risk","mitigation":"steps"}\n'
+        '  ],\n'
+        '  "key_recommendations": ["rec 1","rec 2","rec 3","rec 4"],\n'
+        '  "payment_terms_advice": "recommended payment method",\n'
+        '  "insurance_suggestion": "insurance type and coverage",\n'
+        '  "data_confidence": "high"\n'
+        "}"
+    )
+    return _call_llama(prompt, max_tokens=2200)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -136,7 +164,7 @@ Product: {product}, Qty: {quantity_required}, Quality: {quality_standard}, Origi
 
 Return ONLY JSON:
 {{"product":"{product}","global_supply_overview":"2-sentence overview","total_india_import_usd_m":0,"top_supply_origins":[{{"country":"China","rank":1,"why_recommended":"largest producer","fob_price_range_usd":"X-Y /MT","quality_level":"High","min_order_qty":"1 MT","lead_time_weeks":"6-8","bcd_pct":"10%","igst_pct":"18%","total_landed_markup_pct":"~42%","fta_with_india":false,"fta_saving":"N/A","concerns":["quality consistency"],"b2b_platforms":["Alibaba","Global Sources"]}}],"india_domestic_alternative":{{"available":true,"producing_states":["Gujarat","Maharashtra"],"domestic_vs_import":"domestic X% cheaper including duties","recommendation":"import or domestic + why"}},"recommended_strategy":"specific approach","due_diligence_steps":["Get ISO cert","Order sample first","Verify Trade Assurance","Check Indian Embassy trade section"],"payment_advice":"LC first order, DP after 2 shipments","total_landed_cost_breakdown":{{"fob":"100%","freight_cif":"+12-15%","bcd":"+10%","sws":"+1%","igst":"+18% (recoverable)","clearing":"+1-2%","total":"~142-146% of FOB"}},"trade_finance_options":["SBI Trade Finance","EXIM Bank import credit"]}}"""
-    return _call_llama(prompt)
+    return _call_llama(prompt, max_tokens=3000)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -149,4 +177,4 @@ Product: {product}, Direction: {direction} from/to India, Markets: {countries_st
 
 Return ONLY JSON:
 {{"report_title":"Trade Intelligence Report: {product}","executive_summary":{{"headline_finding":"most important insight","market_opportunity":"quantified opportunity","india_readiness":"High - reason","top_recommendation":"primary action","key_risks":["risk 1","risk 2"]}},"product_profile":{{"hs_code":"8-digit","global_market_size_usd_b":0,"growth_rate_pct":0,"india_export_value_usd_m":0,"india_global_rank":0,"product_type":"Commodity"}},"market_analysis":[{{"country":"","import_size_usd_m":0,"india_share_pct":0,"growth_rate_pct":0,"opportunity_score":0,"entry_difficulty":"Medium","tariff_pct":0,"fta_benefit":"N/A","recommendation":"Priority Entry"}}],"regulatory_analysis":{{"hs_code":"","export_policy":"Free","import_policy":"Free","licence_required":false,"key_documents":[],"certifications":[],"compliance_complexity":"Low","compliance_time_days":7}},"pricing_analysis":{{"india_fob_range":"","gross_margin_range_pct":"","price_trend":"Rising","india_price_position":"competitive"}},"competitive_analysis":{{"india_rank":0,"top_competitors":[],"india_advantages":[],"india_gaps":[],"win_strategy":""}},"risk_summary":{{"overall":"Medium","top_risks":[],"mitigation":[]}},"action_plan":[{{"week":"1-2","action":"","output":""}},{{"week":"3-4","action":"","output":""}},{{"week":"5-8","action":"","output":""}},{{"week":"9-12","action":"","output":""}}],"useful_resources":[{{"name":"DGFT","url":"dgft.gov.in","purpose":"Policy and licences"}},{{"name":"ICEGATE","url":"icegate.gov.in","purpose":"HS codes and customs"}},{{"name":"ITC Trade Map","url":"trademap.org","purpose":"Global statistics"}}],"disclaimer":"AI-generated — verify with official sources before business decisions."}}"""
-    return _call_llama(prompt)
+    return _call_llama(prompt, max_tokens=3000)
